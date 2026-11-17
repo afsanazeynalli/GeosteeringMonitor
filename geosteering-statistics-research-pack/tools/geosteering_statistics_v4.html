@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Geosteering zone statistics</title>
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--panel:#eef2f6;--line:#d8dfe7;--fg:#1c2833;--mut:#5b6b7b;--accent:#2f5d7c;
+--in:#1f8a5b;--out:#cf5a24;--below:#2587a4;--tgt:#f4e08a;--tgtl:#c79f00;--traj:#2b3fb8;--shadow:0 1px 2px rgba(20,35,50,.06),0 4px 14px rgba(20,35,50,.05);
+--sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141a;--card:#161e27;--panel:#1c2630;--line:#2b3846;--fg:#e6ebf1;--mut:#93a1b1;--accent:#8fbbdc;--in:#35b57d;--out:#ee7c47;--below:#4cb0cb;--tgt:#6f6320;--tgtl:#d4b20a;--traj:#8ea0ff;--shadow:0 1px 2px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--bg:#0e141a;--card:#161e27;--panel:#1c2630;--line:#2b3846;--fg:#e6ebf1;--mut:#93a1b1;--accent:#8fbbdc;--in:#35b57d;--out:#ee7c47;--below:#4cb0cb;--tgt:#6f6320;--tgtl:#d4b20a;--traj:#8ea0ff;--shadow:0 1px 2px rgba(0,0,0,.4)}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 56px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+main{max-width:1480px;margin:0 auto;padding:8px clamp(12px,2vw,28px) 48px}
+h1{font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.02em;line-height:1.2;margin:14px 0 4px}
+h2{font-size:19px;font-weight:650;letter-spacing:-.005em;margin:0}
+h3{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);margin:18px 0 8px}
+.sub{color:var(--mut);font-size:14px;margin:0}
+code{font:12.5px var(--mono);background:var(--panel);padding:1px 5px;border-radius:4px}
+b,strong{font-weight:600}
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;gap:6px;overflow-x:auto;padding:8px 0;margin:10px 0 4px;background:var(--bg);scrollbar-width:none}
+nav.toc a{flex:none;font-size:13px;font-weight:550;color:var(--mut);text-decoration:none;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card)}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--fg);border-color:var(--accent)}
+section.card,details{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin:14px 0}
+section.card{padding:18px 20px}
+.card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi b{display:block;font-size:32px;font-weight:650;line-height:1.1;letter-spacing:-.02em}
+.kpi span{display:block;color:var(--mut);font-size:13px;margin-top:4px}
+.kpi.g{border-top:3px solid var(--in)}.kpi.g b{color:var(--in)}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 22px;background:var(--panel);padding:14px 16px;border-radius:10px;transition:opacity .2s}
+.ctl label,.field>span{display:block;font-size:14px;color:var(--mut)}
+.ctl label output{color:var(--fg);font-weight:650}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:12px 0}
+.toolbar .grow{flex:1}
+.field{display:flex;align-items:center;gap:8px}
+button{font:600 14px/1.2 var(--sans);border:1px solid var(--line);border-radius:8px;padding:9px 15px;min-height:38px;background:var(--panel);color:var(--fg);cursor:pointer;transition:background .15s,border-color .15s}
+button:hover{border-color:var(--accent)}button:active{transform:translateY(1px)}
+button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+button.primary:hover{filter:brightness(1.08)}
+button.active{background:var(--in);color:#fff;border-color:var(--in)}
+button:disabled{opacity:.4;cursor:default}
+input,select,textarea{font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:100%}
+input[type=range]{width:100%;padding:0;border:0;background:transparent;accent-color:var(--in);margin-top:6px}
+textarea{width:100%;min-height:130px;font:12.5px/1.5 var(--mono);margin-top:10px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--traj);outline-offset:2px}
+#faultMDs{width:180px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--mut);font-family:var(--sans)}
+#sec text{font-size:14px}#trk text{font-size:12.5px}#strip text{font-size:12.5px}
+#sec line,#sec polyline,#trk polyline,#trk line,#trk path{vector-effect:non-scaling-stroke}
+#sec,#trk,#strip{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
+.explore-panel svg{max-width:820px;margin:0 auto}
+#sec{aspect-ratio:1200/820;height:auto;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
+#sec.pan-mode{cursor:grabbing}
+#secScroll,#trkScroll{overflow:hidden;position:relative}
+#trk{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#trk.pan-mode{cursor:grabbing}#trk.box-zoom-mode{cursor:crosshair}
+#trkZoomLevel{font-size:12px;color:var(--mut);min-width:90px}
+.geo-layout{container-type:inline-size;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:10px;align-items:stretch}
+#sideLogs{min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 6px;overflow:hidden}
+.side-logs-heading{display:flex;flex-direction:column;margin:0 2px 8px;font-size:12.5px}
+.side-logs-heading span{font-size:11px;color:var(--mut)}
+#sideLogTracks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;align-items:start}
+.side-log{min-width:0;overflow:hidden;border-left:1px solid var(--line);padding:0 2px}.side-log:first-child{border-left:0}
+.side-log-title{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:12.5px;line-height:1.15;font-weight:650;min-height:30px;margin-bottom:5px}
+.side-log-title small{font-size:11px;font-weight:500;color:var(--mut)}
+.side-log svg{height:max(380px,calc((100cqw - 410px)*.6833))}
+.side-log svg text{font-size:11px}
+@media(max-width:1050px){.geo-layout{grid-template-columns:minmax(0,1fr)}#sideLogs{overflow-x:auto}#sideLogTracks{min-width:380px}.side-log svg{height:440px}}
+#hoverReadout,#lateralHoverReadout,.explore-hover-readout{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px 14px}
+#hoverReadout b,#lateralHoverReadout b,.explore-hover-readout b,.explore-hover-tooltip b,.dist-stats small{display:block;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+#hoverReadout span,#lateralHoverReadout span,.explore-hover-readout span,.explore-hover-tooltip span{font-weight:600}
+.explore-hover-tooltip{position:fixed;z-index:50;display:none;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.2);font-size:13px;min-width:170px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--mut);margin-top:10px}
+.legend i,.sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.scale-row{display:flex;align-items:center;gap:8px;width:100%}
+.scale-bar{flex:1;max-width:240px;height:10px;border-radius:5px}
+#grscale{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--mut);margin-top:10px}
+.note{font-size:14px;color:var(--mut);margin:12px 0 0;padding:9px 12px;background:var(--panel);border-left:3px solid var(--line);border-radius:0 7px 7px 0}
+.note strong{color:var(--fg)}
+.note:empty{display:none}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:600;font-size:12.5px;background:var(--panel)}
+tr:last-child td{border-bottom:0}
+.explore-bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-bottom:12px}
+#tabs{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+#tabs button{border:0;border-radius:0;background:transparent;color:var(--mut);padding:8px 16px}
+#tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.explore-panel{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.dist-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 12px;margin-top:12px}
+.dist-stats>div{background:var(--panel);border-radius:8px;padding:8px 10px;min-width:0}
+.dist-stats b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+details>summary{list-style:none;cursor:pointer;font-weight:650;padding:14px 20px;display:flex;align-items:center;gap:10px}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"+";display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--panel);color:var(--accent);font-weight:700;line-height:1}
+details[open]>summary::before{content:"\2212"}
+details[open]>summary{border-bottom:1px solid var(--line)}
+details>.body{padding:16px 20px 20px}
+details>summary small{font-weight:400;color:var(--mut);font-size:13px;margin-left:auto}
+#liveBadge{font-size:12px;font-weight:650;padding:5px 11px;border-radius:999px;background:#e6edf2;color:#38556b}
+@media(max-width:720px){section.card{padding:14px}.kpi b{font-size:23px}#faultMDs{width:100%}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style></head>
+<body><main>
+<header>
+<h1>Geosteering zone statistics</h1>
+<p class="sub" id="sub"></p>
+<div class="kpis" id="kpis"></div>
+<nav class="toc" aria-label="Page sections"><a href="#sec-target">Target</a><a href="#sec-section">Section</a><a href="#sec-tracks">Tracks</a><a href="#sec-summary">Summary</a><a href="#sec-explore">Explore</a><a href="#sec-data">Data &amp; live feed</a></nav>
+</header>
+
+<section class="card" id="sec-target">
+<div class="card-head"><h2>1 · Target window</h2><button id="resetZones" type="button" title="Restore the built-in demo target zones">Reset to demo</button></div>
+<div class="ctl" id="ctl">
+ <div><label>Target thickness <output id="oT">6.0</output> m<input id="sT" type="range" min="2" max="35" step="0.5" value="6"></label></div>
+ <div><label>Shift target <output id="oS">0.0</output> m (+ shallower)<input id="sS" type="range" min="-35" max="35" step="0.5" value="0"></label></div>
+ <div><label>Uncertainty ± <output id="oU">1.00</output> m<input id="sU" type="range" min="0" max="25" step="0.25" value="1"></label></div>
+</div>
+<div class="toolbar" aria-label="Fault controls">
+ <label class="field"><span>Fault MDs (m)</span><input id="faultMDs" type="text" value="1868, 2108" aria-label="Comma-separated fault measured depths"></label>
+ <button id="applyFaults" class="primary" type="button">Apply faults</button>
+ <button id="resetFaults" type="button">Reset faults</button>
+ <span class="sub" id="faultStatus">Default demo faults: 1868, 2108 m</span>
+</div>
+<p class="note" id="err"></p>
+</section>
+
+<section class="card" id="sec-section">
+<div class="card-head"><h2>2 · Geosteering section</h2><span class="sub">Scroll to zoom · drag to pan · hover to inspect</span></div>
+<div class="toolbar">
+ <label class="field"><span>Log behind trajectory</span><select id="lg"><option value="0">GR</option><option value="1">Porosity</option><option value="2">Density</option><option value="3">Resistivity</option><option value="4">ROP</option></select></label>
+ <button id="zoomReset" type="button" title="Reset view">Reset view</button>
+</div>
+<div class="geo-layout">
+ <div class="scroll" id="secScroll"><svg id="sec" viewBox="0 0 2600 820" preserveAspectRatio="none" role="img" aria-label="Geosteering cross-section with point inspection"></svg></div>
+ <aside id="sideLogs" aria-label="Lateral log tracks"><div class="side-logs-heading"><strong>Lateral logs</strong><span>Same MD interval · depth increases downward</span></div><div id="sideLogTracks"></div></aside>
+</div>
+<div id="hoverReadout" aria-live="polite"><div><b>Point inspection</b><span>Move your pointer over the section</span></div></div>
+<div class="legend"><span><i style="background:var(--tgt)"></i>Target zone</span><span><i style="background:var(--in)"></i>Trajectory in target</span><span><i style="background:var(--out)"></i>Above target</span><span><i style="background:var(--below)"></i>Below target</span><span><i style="background:linear-gradient(90deg,hsl(220 90% 46%),hsl(115 75% 42%),hsl(10 80% 50%));opacity:.5"></i>Geosteered log</span></div>
+</section>
+
+<section class="card" id="sec-tracks">
+<div class="card-head"><h2>3 · Lateral tracks</h2><span class="sub">Scroll to zoom horizontally · drag to pan</span></div>
+<div class="toolbar" aria-label="Lateral tracks zoom and pan controls">
+ <button id="trkBoxZoomToggle" type="button" title="Drag a rectangle to zoom into that area">Box zoom</button>
+ <button id="trkZoomReset" type="button" title="Reset lateral tracks view">Reset view</button>
+ <span id="trkZoomLevel">H 100% · V 100%</span>
+</div>
+<div class="scroll" id="trkScroll"><svg id="trk" viewBox="0 0 760 190" role="img" aria-label="GR, resistivity, distance to target and zone tracks along measured depth"></svg></div>
+<div id="lateralHoverReadout" aria-live="polite"><div><b>Lateral track inspection</b><span>Move your pointer over the tracks to inspect sample values.</span></div></div>
+<div id="grscale"></div>
+<h3>Zone log along the lateral</h3>
+<svg id="strip" viewBox="0 0 760 56" role="img" aria-label="Zone log"></svg>
+<p class="note" id="runs"></p>
+</section>
+
+<section class="card" id="sec-summary">
+<div class="card-head"><h2>4 · What the data says about the target</h2></div>
+<div class="scroll"><table id="tbl"></table></div>
+<p class="note" id="insight"></p>
+</section>
+
+<section class="card" id="sec-explore">
+<div class="card-head"><h2>5 · Explore the logs</h2></div>
+<div class="explore-bar">
+ <div id="tabs" role="group" aria-label="Analysis type"><button data-t="h">Distribution</button><button data-t="x">Crossplot</button><button data-t="c">Net pay check</button></div>
+ <label class="field"><span>Log</span><select id="distLog"><option value="0">GR (API)</option><option value="1">Porosity (v/v)</option><option value="2">Density (g/cc)</option><option value="3">Resistivity (ohm·m)</option><option value="4">ROP</option></select></label>
+</div>
+<div id="lt"></div>
+<div id="exploreHoverTooltip" class="explore-hover-tooltip" role="status" aria-live="polite"></div>
+</section>
+
+<h3 id="sec-data" style="margin:26px 4px 0">6 · Data &amp; live feed</h3>
+<details id="imp"><summary>Use your own data <small>Paste or import CSV</small></summary><div class="body">
+<p class="sub">Paste CSV with a header row: <code>md,tvdss,top,base</code> and optionally <code>gr,phi,rhob,rt,rop</code>. Values in metres (TVDSS negative downward). Target sliders are ignored for custom data.</p>
+<textarea id="csv" spellcheck="false" placeholder="md,tvdss,top,base,gr,phi,rhob,rt,rop&#10;1480,-1250,-1262,-1268,12.1,0.22,2.29,9,17&#10;..."></textarea>
+<input id="csvFile" type="file" accept=".csv,text/csv,.txt,text/plain" hidden>
+<div class="toolbar"><button id="pickCsv" class="primary" type="button">Import CSV file…</button><button id="load" class="primary" type="button">Analyse pasted CSV</button><button id="samp" type="button">Load built-in sample</button><button id="reset" type="button">Back to demo</button></div>
+</div></details>
+
+<details id="readme"><summary>CSV format reference</summary><div class="body">
+<p class="sub">One row per MD sample along the lateral, first line is a header. Columns are matched by name (any order, any case). Separator: comma, semicolon or tab. Depths in metres, TVDSS negative downward.</p>
+<div class="scroll" style="margin:12px 0"><table style="min-width:480px"><tr><th style="text-align:left">Column</th><th style="text-align:left">Need</th><th style="text-align:left">Meaning</th></tr>
+<tr><td>md</td><td style="text-align:left">required</td><td style="text-align:left">Measured depth, ascending, e.g. every 3 m</td></tr>
+<tr><td>tvdss</td><td style="text-align:left">required</td><td style="text-align:left">Trajectory depth at that MD</td></tr>
+<tr><td>top</td><td style="text-align:left">required</td><td style="text-align:left">Top of target at that MD (shallower, e.g. -1262)</td></tr>
+<tr><td>base</td><td style="text-align:left">required</td><td style="text-align:left">Base of target (deeper than top, e.g. -1268)</td></tr>
+<tr><td>gr, phi, rhob, rt, rop</td><td style="text-align:left">optional</td><td style="text-align:left">GR (API), porosity (v/v), density (g/cc), resistivity (ohm·m), ROP. Blanks are fine.</td></tr></table></div>
+<p class="sub">Zone rule per row: above target if tvdss &gt; top, below if tvdss &lt; base, otherwise in target. Rows are sorted by MD, non-numeric rows are skipped, at least 4 rows are needed.</p>
+<textarea readonly style="min-height:96px">md,tvdss,top,base,gr,phi,rhob,rt,rop
+1480,-1254.46,-1262.00,-1268.00,12.9,0.221,2.283,8.5,17.6
+1483,-1255.31,-1261.93,-1267.93,13.0,0.219,2.254,6.3,17.9
+1486,-1256.16,-1261.86,-1267.86,12.5,0.218,2.343,8.7,16.9
+...</textarea>
+<p class="sub" style="margin-top:10px">Quick test: use “Load built-in sample”, or open this page with <b>#csv-sample</b> on the end of the link.</p>
+</div></details>
+
+<details id="liveConnection"><summary>Real-time data connection <span id="liveBadge">Disconnected</span><small>Simulated, WebSocket or REST</small></summary><div class="body">
+<p class="sub">Live feeds must provide measured depth, TVDSS, target top and target base, plus optional logs. A local HTML file cannot reach a rig system by itself; use an approved WebSocket/API gateway for operational data.</p>
+<div class="ctl" style="margin:12px 0">
+ <label>Connection option<select id="liveMode" style="display:block;width:100%;margin-top:6px"><option value="demo">1 · Simulated live stream (trial)</option><option value="ws">2 · WebSocket feed</option><option value="rest">3 · REST API polling</option></select></label>
+ <label>Well / feed label<input id="liveWell" type="text" value="DEMO-WELL-01" style="display:block;width:100%;margin-top:6px"></label>
+ <label>Update interval <output id="liveIntervalOut">3 s</output><input id="liveInterval" type="range" min="1" max="30" value="3" step="1"></label>
+</div>
+<div id="liveEndpointWrap" style="display:none;margin:8px 0"><label class="sub" for="liveEndpoint" id="liveEndpointLabel">Endpoint URL</label><input id="liveEndpoint" type="url" placeholder="wss://your-approved-gateway/stream" style="display:block;width:100%;margin-top:4px"><p class="sub" id="liveEndpointHelp" style="margin:6px 0 0"></p></div>
+<div class="toolbar"><button id="liveConnect" class="primary" type="button">Connect</button><button id="liveDisconnect" type="button" disabled>Disconnect</button><button id="livePause" type="button" disabled>Pause updates</button></div>
+<div class="dist-stats"><div><small>Last update</small><b id="liveLastUpdate">—</b></div><div><small>Samples loaded</small><b id="liveSampleCount">—</b></div><div><small>Feed / well</small><b id="liveFeedName">Not connected</b></div><div><small>Connection message</small><b id="liveMessage">Choose an option and connect.</b></div></div>
+<p class="note">Accepted payloads: CSV text with headers <code>md,tvdss,top,base,gr,phi,rhob,rt,rop</code>, a JSON array of row objects, or <code>{"rows":[...]}</code>. REST polling expects a CORS-enabled endpoint returning one of these formats. Never put credentials or API keys in this file.</p>
+</div></details>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const C={in:'var(--in)',above:'var(--out)',below:'var(--below)'};
+const NAMES={above:'Above',in:'In target',below:'Below'};
+const PROF={above:[92,.22,2.29,9.4,17.5],in:[38,.25,2.24,17.3,19],below:[108,.21,2.30,3.8,18.5]};
+const SPREAD=[14,.02,.04,3,1.5];
+let D=null,faults=[];
+function rng(s){return()=>(s=s*16807%2147483647)/2147483647}
+function top0(md){let d=0;[...faults].sort((a,b)=>a-b).forEach((fm,i)=>{if(md>fm)d+=(i===0?2.5:8.3)});return -1262+6*Math.sin((md-1480)/260)-d}
+function zoneOf(tvd,t,b){return tvd>t?'above':tvd<b?'below':'in'}
+function demo(){
+ const r=rng(11),rows=[];faults=[1868,2108];
+ // plan the path, then smooth it (about 60 m window) so the bit bends gently through faults and landing
+ const raw=[];for(let m=1480;m<=2139;m+=3){const t=top0(m);const steering=-3+4.8*Math.sin((m-1480)/92+1.15)+2*Math.sin((m-1480)/37);raw.push(t+steering+Math.max(0,(1500-m)/3));}
+ const sm=raw.map((_,i)=>{let a=0,w=0;for(let k=-60;k<=60;k++){const j=i+k;if(j<0||j>=raw.length)continue;const g=Math.exp(-k*k/800);a+=g*raw[j];w+=g}return a/w});
+ let tvd=null,ix=-1;
+ for(let md=1480;md<=2139;md+=3){
+  const t=top0(md);
+  const want=t-3+4.6*Math.sin((md-1480)/85+1)+Math.max(0,(1500-md)/3);
+  // bit can’t jump: limit TVD change per 3 m of MD (~8° max dip), so faults are crossed gradually
+  ix++;tvd=sm[ix];
+  const z=zoneOf(tvd,t,t-6);
+  const lg=PROF[z].map((m,i)=>m+(r()+r()+r()-1.5)*SPREAD[i]);
+  rows.push({md,tvd,t0:t,lg});
+ }
+ rows.forEach((row,i)=>{const prev=rows[Math.max(0,i-1)],next=rows[Math.min(rows.length-1,i+1)];const slope=(next.tvd-prev.tvd)/Math.max(.001,next.md-prev.md);row.inc=Math.acos(Math.min(1,Math.max(0,Math.abs(slope))))*180/Math.PI;row.azi=55+8*Math.sin((row.md-1480)/145)+3*Math.sin((row.md-1480)/43)});D={rows,custom:false};
+}
+function parseCSV(txt){
+ const L=txt.trim().split(/\r?\n/).filter(Boolean);
+ if(L.length<5)throw'Need a header row and at least 4 data rows.';
+ const h=L[0].toLowerCase().split(/[,;\t]/).map(s=>s.trim());
+ const ix=n=>h.indexOf(n);
+ for(const n of['md','tvdss','top','base'])if(ix(n)<0)throw'Missing column: '+n;
+ const lc=['gr','phi','rhob','rt','rop'].map(ix),iInc=ix('inc'),iAzi=ix('azi');
+ const rows=L.slice(1).map(l=>{const c=l.split(/[,;\t]/).map(v=>v.trim()===''?NaN:Number(v));
+  return{md:c[ix('md')],tvd:c[ix('tvdss')],top:c[ix('top')],base:c[ix('base')],inc:iInc<0?NaN:c[iInc],azi:iAzi<0?NaN:c[iAzi],lg:lc.map(i=>i<0?NaN:c[i])}}).filter(r=>isFinite(r.md)&&isFinite(r.tvd)&&isFinite(r.top)&&isFinite(r.base));
+ if(rows.length<4)throw'Could not read enough numeric rows.';
+ rows.sort((a,b)=>a.md-b.md);faults=[];return{rows,custom:true};
+}
+const med=a=>{a=a.filter(isFinite).sort((x,y)=>x-y);return a.length?a[a.length>>1]:NaN};
+const f=(v,d)=>isFinite(v)?v.toFixed(d):'–';
+function calc(){
+ const th=+$('sT').value,sh=+$('sS').value;
+ $('oT').textContent=th.toFixed(1);$('oS').textContent=sh.toFixed(1);
+ $('ctl').style.opacity=D.custom?.4:1;
+ const R=D.rows;
+ R.forEach((r,i)=>{
+  r.T=D.custom?r.top:r.t0+sh;r.B=D.custom?r.base:r.T-th;
+  r.z=zoneOf(r.tvd,r.T,r.B);
+  const n=R[i+1]||null;r.len=n?n.md-r.md:(i?r.md-R[i-1].md:0);
+ });
+ const tot={above:0,in:0,below:0},arr={above:[],in:[],below:[]};
+ R.forEach(r=>{tot[r.z]+=r.len;arr[r.z].push(r)});
+ const len=R.reduce((s,r)=>s+r.len,0);
+ // runs
+ const segs=[];R.forEach(r=>{const l=segs[segs.length-1];if(l&&l.z===r.z){l.e=r.md+r.len;l.n+=r.len}else segs.push({z:r.z,s:r.md,e:r.md+r.len,n:r.len})});
+ const runs=segs.filter(s=>s.z==='in');
+ const exits=runs.filter(s=>s.e<R[R.length-1].md+R[R.length-1].len-.5).length;
+ return{R,tot,arr,len,segs,runs,exits};
+}
+
+// Lateral tracks: independent horizontal and vertical zoom inside a fixed frame.
+// Wheel zooms horizontally; dedicated buttons control vertical exaggeration.
+let trkZoom=1,trkZoomY=1,trkPanX=0,trkPanY=0,trkBoxZoomMode=false,trkDrag=null,trkBaseW=760,trkBaseH=190;
+function applyTrackView(){
+ const el=$('trk'); if(!el)return;
+ const w=trkBaseW/trkZoom,h=trkBaseH/trkZoomY;
+ trkPanX=Math.max(0,Math.min(trkBaseW-w,trkPanX));
+ trkPanY=Math.max(0,Math.min(trkBaseH-h,trkPanY));
+ el.setAttribute('viewBox',trkPanX+' '+trkPanY+' '+w+' '+h);
+ $('trkZoomLevel').textContent='H '+Math.round(trkZoom*100)+'% · V '+Math.round(trkZoomY*100)+'%';
+ $('trkBoxZoomToggle').classList.toggle('active',trkBoxZoomMode);
+ el.classList.toggle('box-zoom-mode',trkBoxZoomMode);
+ el.classList.toggle('pan-mode',!!trkDrag&&!trkBoxZoomMode);
+}
+function zoomTracks(factor,cx,cy){
+ const old=trkZoom,next=Math.max(1,Math.min(12,old*factor));
+ if(Math.abs(next-old)<1e-6)return;
+ const rect=$('trk').getBoundingClientRect(),rx=Math.max(0,Math.min(1,(cx-rect.left)/Math.max(1,rect.width)));
+ const anchor=trkPanX+rx*(trkBaseW/old);
+ trkZoom=next;trkPanX=anchor-rx*(trkBaseW/next);applyTrackView();
+}
+function zoomTracksVertical(factor){
+ const old=trkZoomY,next=Math.max(1,Math.min(8,old*factor));
+ if(Math.abs(next-old)<1e-6)return;
+ const cy=trkPanY+(trkBaseH/old)/2;
+ trkZoomY=next;trkPanY=cy-(trkBaseH/next)/2;applyTrackView();
+}
+$('trkZoomReset').onclick=()=>{trkZoom=1;trkZoomY=1;trkPanX=0;trkPanY=0;trkBoxZoomMode=false;trkDrag=null;const old=document.getElementById('trkZoomSelection');if(old)old.remove();applyTrackView()};
+$('trkBoxZoomToggle').onclick=()=>{trkBoxZoomMode=!trkBoxZoomMode;trkDrag=null;applyTrackView()};
+const trackEl=$('trk');
+trackEl.addEventListener('wheel',e=>{e.preventDefault();zoomTracks(e.deltaY<0?1.15:1/1.15,e.clientX,e.clientY)},{passive:false});
+trackEl.addEventListener('contextmenu',e=>e.preventDefault());
+trackEl.addEventListener('pointerdown',e=>{
+ if(e.button!==0)return;
+ const rect=trackEl.getBoundingClientRect();if(!rect.width||!rect.height)return;
+ e.preventDefault();
+ trkDrag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,panX:trkPanX,panY:trkPanY,pointerId:e.pointerId,rect,box:trkBoxZoomMode};
+ if(trkDrag.box){let box=document.getElementById('trkZoomSelection');if(!box){box=document.createElementNS('http://www.w3.org/2000/svg','rect');box.id='trkZoomSelection';box.setAttribute('fill','#4c6f91');box.setAttribute('fill-opacity','.16');box.setAttribute('stroke','#365c7b');box.setAttribute('stroke-width','1.5');box.setAttribute('stroke-dasharray','5 3');trackEl.appendChild(box)}box.setAttribute('x',0);box.setAttribute('y',0);box.setAttribute('width',0);box.setAttribute('height',0)}
+ try{trackEl.setPointerCapture(e.pointerId)}catch(_){}
+ applyTrackView();
+});
+trackEl.addEventListener('pointermove',e=>{
+ if(!trkDrag||e.pointerId!==trkDrag.pointerId)return;
+ const rect=trkDrag.rect,dx=e.clientX-trkDrag.x,dy=e.clientY-trkDrag.y;
+ if(trkDrag.box){const sx=Math.min(trkDrag.x,e.clientX)-rect.left,sy=Math.min(trkDrag.y,e.clientY)-rect.top,sw=Math.abs(dx),sh=Math.abs(dy);const box=document.getElementById('trkZoomSelection');if(box){box.setAttribute('x',sx/rect.width*(trkBaseW/trkZoom)+trkPanX);box.setAttribute('y',sy/rect.height*(trkBaseH/trkZoomY)+trkPanY);box.setAttribute('width',sw/rect.width*(trkBaseW/trkZoom));box.setAttribute('height',sh/rect.height*(trkBaseH/trkZoomY))}}
+ else {if(!rect.width||!rect.height)return;trkPanX=trkDrag.panX-dx*(trkBaseW/trkZoom)/rect.width;trkPanY=trkDrag.panY-dy*(trkBaseH/trkZoomY)/rect.height;applyTrackView()}
+});
+function endTrackDrag(e){
+ if(!trkDrag||(e.pointerId!==undefined&&e.pointerId!==trkDrag.pointerId))return;
+ const d=trkDrag,rect=d.rect,dx=Math.abs((e.clientX??d.x)-d.x),dy=Math.abs((e.clientY??d.y)-d.y);
+ if(d.box&&dx>12&&dy>8&&rect.width&&rect.height){const left=Math.min(d.x,e.clientX)-rect.left,top=Math.min(d.y,e.clientY)-rect.top;const right=Math.max(d.x,e.clientX)-rect.left,bottom=Math.max(d.y,e.clientY)-rect.top;const oldW=trkBaseW/trkZoom,oldH=trkBaseH/trkZoomY;const x1=trkPanX+left/rect.width*oldW,x2=trkPanX+right/rect.width*oldW,y1=trkPanY+top/rect.height*oldH,y2=trkPanY+bottom/rect.height*oldH;trkZoom=Math.max(1,Math.min(12,trkBaseW/Math.max(1,x2-x1)));trkZoomY=Math.max(1,Math.min(8,trkBaseH/Math.max(1,y2-y1)));trkPanX=x1;trkPanY=y1}
+ trkDrag=null;const box=document.getElementById('trkZoomSelection');if(box)box.remove();applyTrackView()
+}
+trackEl.addEventListener('pointerup',endTrackDrag);trackEl.addEventListener('pointercancel',endTrackDrag);
+window.addEventListener('blur',()=>{if(trkDrag){trkDrag=null;const box=document.getElementById('trkZoomSelection');if(box)box.remove();applyTrackView()}});
+
+
+function renderSideLogs(R){
+ const host=$('sideLogTracks'); if(!host)return;
+ const defs=[
+  {i:0,name:'GR',unit:'API',color:'#a98243',min:0,max:150},
+  {i:3,name:'Resistivity',unit:'ohm·m',color:'#4d7895',min:0,max:null},
+  {i:1,name:'Porosity',unit:'v/v',color:'#4c8b78',min:0,max:0.4},
+  {i:2,name:'Density',unit:'g/cc',color:'#8b729c',min:1.8,max:2.8}
+ ];
+ const md0=R[0].md,md1=R[R.length-1].md;
+ host.innerHTML=defs.map(d=>{
+  const vals=R.map(r=>r.lg[d.i]).filter(Number.isFinite);
+  let lo=d.min,hi=d.max===null?(vals.length?Math.max(...vals):1):d.max;
+  if(d.max===null)lo=0;
+  if(!Number.isFinite(hi)||hi<=lo)hi=lo+1;
+  const W=112,H=820,L=25,RR=4,T=8,B=8,plotW=W-L-RR,plotH=H-T-B;
+  const X=v=>L+(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*plotW;
+  const Y=md=>T+(md-md0)/Math.max(1,md1-md0)*plotH;
+  let g='';
+  for(let k=0;k<=4;k++){
+   const y=T+k*plotH/4,md=md0+k*(md1-md0)/4;
+   g+=`<line x1="${L}" y1="${y}" x2="${W-RR}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${L-2}" y="${y+3}" text-anchor="end">${Math.round(md)}</text>`;
+  }
+  R.forEach((r,i)=>{const y=Y(r.md),yn=i<R.length-1?Y(R[i+1].md):H-B;g+=`<rect x="${L}" y="${y}" width="${plotW}" height="${Math.max(1,yn-y+0.4)}" fill="${C[r.z]}" opacity=".16"/>`});
+  for(let k=0;k<=2;k++){
+   const x=L+k*plotW/2,v=lo+k*(hi-lo)/2;
+   g+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${H-B}" stroke="var(--line)" stroke-width=".7"/><text x="${x}" y="${H-1}" text-anchor="middle">${v.toFixed(d.i===1?1:d.i===2?2:0)}</text>`;
+  }
+  const pts=R.filter(r=>Number.isFinite(r.lg[d.i])).map(r=>`${X(r.lg[d.i])},${Y(r.md)}`).join(' ');
+  g+=`<polyline points="${pts}" fill="none" stroke="${d.color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+  return `<div class="side-log"><div class="side-log-title"><span>${d.name}</span><small>${d.unit}</small></div><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${d.name} log versus measured depth">${g}</svg></div>`;
+ }).join('');
+}
+function niceStep(span,n){const raw=span/n,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;return Math.max(1,(f<1.5?1:f<3.5?2:f<7.5?5:10)*p)}
+function render(){
+ const S=calc(),{R,tot,arr,len,segs,runs,exits}=S;
+ const pct=z=>len?100*tot[z]/len:0;
+ $('sub').textContent='MD '+R[0].md+'–'+(R[R.length-1].md+R[R.length-1].len)+' m · '+(D.custom?'custom data':'demo lateral with synthetic logs')+' · zones from top and base of target';
+ $('kpis').innerHTML=
+  `<div class="kpi g"><b>${f(pct('in'),1)}%</b><span>of the lateral in target</span></div>`+
+  `<div class="kpi"><b>${f(tot.in,0)} m</b><span>between top and base target</span></div>`+
+  `<div class="kpi"><b>${f(len,0)} m</b><span>lateral length</span></div>`+
+  `<div class="kpi"><b>${runs.length}</b><span>target runs · ${exits} exit${exits==1?'':'s'}</span></div>`+
+  `<div class="kpi"><b>${faults.length||'–'}</b><span>faults marked</span></div>`;
+ // section
+ const x0=R[0].md,x1=R[R.length-1].md,W=1200,L=105,Rr=30,Tp=38,H=820,Bt=72,XS=niceStep(R[R.length-1].md-R[0].md,9);
+ const U=+$('sU').value,ys=R.flatMap(r=>[r.tvd,r.T+U,r.B-U,r.T-U,r.B+U]);
+ const rawMin=Math.min(...ys),rawMax=Math.max(...ys),span=Math.max(10,rawMax-rawMin);
+ const yMin=rawMin-span*.10,yMax=rawMax+span*.10,YS=niceStep(yMax-yMin,8);
+ $('oU').textContent=U.toFixed(2);
+ const X=m=>L+(m-x0)/(x1-x0)*(W-L-Rr),Y=v=>Tp+(yMax-v)/(yMax-yMin)*(H-Tp-Bt);
+ let s='';
+ for(let k=Math.ceil(yMin/YS)*YS;k<=yMax;k+=YS)s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(k)}" y2="${Y(k)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(k)+3}" text-anchor="end">${k}</text>`;
+ for(let m=Math.ceil(x0/XS)*XS;m<=x1;m+=XS)s+=`<text x="${X(m)}" y="${H-Bt+16}" text-anchor="middle">${m}</text>`;
+ s+=`<text x="${(W+L)/2}" y="${H-6}" text-anchor="middle" style="font-size:18px;font-weight:700;fill:var(--fg)">Measured depth (m)</text><text transform="translate(27 ${H/2}) rotate(-90)" text-anchor="middle" style="font-size:18px;font-weight:700;fill:var(--fg)">TVDSS (m)</text>`;
+ const pT=R.map(r=>X(r.md)+','+Y(r.T)).join(' '),pB=R.slice().reverse().map(r=>X(r.md)+','+Y(r.B)).join(' ');
+ s+='<defs><pattern id="pt" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="var(--tgtl)" opacity=".8"/><circle cx="6.5" cy="6.5" r=".8" fill="var(--tgtl)" opacity=".7"/></pattern><pattern id="pb" width="16" height="10" patternUnits="userSpaceOnUse"><path d="M0 .5H16M0 5.5H16M8 .5V5.5M0 5.5V10M16 5.5V10" fill="none" stroke="var(--below)" stroke-width=".8" opacity=".55"/></pattern><pattern id="pa" width="14" height="10" patternUnits="userSpaceOnUse"><path d="M1 3h6M8 8h5" stroke="var(--mut)" stroke-width=".8" opacity=".4"/></pattern></defs>';
+ const pBase=R.map(r=>X(r.md)+','+Y(r.B)).join(' ');
+ s+=`<polygon points="${pT} ${X(x1)},${Tp} ${X(x0)},${Tp}" fill="url(#pa)"/><polygon points="${pBase} ${X(x1)},${H-Bt} ${X(x0)},${H-Bt}" fill="var(--below)" fill-opacity=".1"/><polygon points="${pBase} ${X(x1)},${H-Bt} ${X(x0)},${H-Bt}" fill="url(#pb)"/>`;
+ s+=`<polygon points="${pT} ${pB}" fill="var(--tgt)" opacity=".85"/><polygon points="${pT} ${pB}" fill="url(#pt)"/>`;
+ const sh0=D.custom?0:+$('sS').value,ln=f=>R.map(r=>X(r.md)+','+Y(f(r))).join(' '),dl=(f,c,d,o)=>'<polyline points="'+ln(f)+'" fill="none" stroke="'+c+'" stroke-opacity="'+o+'" stroke-width="1" stroke-dasharray="'+d+'"/>';
+ if(U>0)s+=dl(r=>r.T+U,'var(--tgtl)','2 3',.7)+dl(r=>r.T-U,'var(--tgtl)','2 3',.7)+dl(r=>r.B+U,'var(--tgtl)','2 3',.7)+dl(r=>r.B-U,'var(--tgtl)','2 3',.7);
+ if(sh0)s+=dl(r=>r.T-sh0,'var(--mut)','1 3',.9)+dl(r=>r.B-sh0,'var(--mut)','1 3',.9);
+ s+='<text x="'+(L+4)+'" y="'+(H-Bt-6)+'">\u00b1'+U.toFixed(2)+' m uncertainty (dashed)'+(sh0?' \u00b7 dotted = before '+sh0.toFixed(1)+' m shift':'')+'</text>';
+ s+=`<polyline points="${pT}" fill="none" stroke="var(--tgtl)" stroke-width="1.2"/><polyline points="${R.map(r=>X(r.md)+','+Y(r.B)).join(' ')}" fill="none" stroke="var(--tgtl)" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+ faults.forEach(m=>{if(m>x0&&m<x1)s+=`<line x1="${X(m)}" x2="${X(m)}" y1="${Tp}" y2="${H-Bt}" stroke="var(--mut)" stroke-dasharray="2 3"/><text x="${X(m)+3}" y="${Tp+9}">Fault ${m}</text>`});
+ const li=+$('lg').value,lv=R.map(r=>r.lg[li]).filter(isFinite),lo=li===0?0:Math.min(...lv),hi=li===0?150:Math.max(...lv),LN=['Sand–shale GR','Porosity','Density','Resistivity','ROP'][li];
+ if(lv.length&&hi>lo){
+  s+='<defs><linearGradient id="cb"><stop offset="0" stop-color="hsl(220 90% 46%)"/><stop offset=".5" stop-color="hsl(115 75% 42%)"/><stop offset="1" stop-color="hsl(10 80% 50%)"/></linearGradient><linearGradient id="cs"><stop offset="0" stop-color="rgb(246,214,72)"/><stop offset="1" stop-color="rgb(110,72,40)"/></linearGradient></defs>';
+  const sv=smo(R.map(r=>r.lg[li]),2),cf=v=>isFinite(v)?(li==0?ssc(v/150):'hsl('+(220-210*Math.min(1,Math.max(0,(v-lo)/(hi-lo))))+' 90% 46%)'):'var(--mut)',xa=X(R[0].md),xb=X(R[R.length-1].md);
+  let gs='<filter id="hb" filterUnits="userSpaceOnUse" x="0" y="0" width="'+W+'" height="'+H+'"><feGaussianBlur stdDeviation="4.8"/></filter><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="'+xa+'" x2="'+xb+'" y1="0" y2="0">';
+  R.forEach((r,i)=>{gs+='<stop offset="'+((X(r.md)-xa)/(xb-xa)).toFixed(4)+'" stop-color="'+cf(sv[i])+'"/>'});
+  s+=gs+'</linearGradient><path d="'+curve(R.map(r=>[X(r.md),Y(r.tvd)]))+'" fill="none" stroke="url(#hg)" stroke-opacity=".78" stroke-width="86" stroke-linecap="round" filter="url(#hb)"/>';
+  const dp=li==1||li==2?2:1;
+  s+='<text x="'+(W-Rr-112)+'" y="26" text-anchor="end">'+LN+' '+lo.toFixed(dp)+'</text><rect x="'+(W-Rr-108)+'" y="16" width="70" height="10" fill="'+(li==0?'url(#cs)':'url(#cb)')+'" opacity=".8"/><text x="'+(W-Rr-34)+'" y="26">'+hi.toFixed(dp)+'</text>';
+ }
+ for(let i=0;i<R.length-1;i++)s+=`<line x1="${X(R[i].md)}" y1="${Y(R[i].tvd)}" x2="${X(R[i+1].md)}" y2="${Y(R[i+1].tvd)}" stroke="${C[R[i].z]}" stroke-width="2.6" stroke-linecap="round"/>`;
+ {const o=$('sec');o.replaceWith(o.cloneNode(false))}$('sec').innerHTML=s;
+  renderSideLogs(R);
+ // Point inspector: map pointer position to MD and report nearest sampled row.
+ const sec=$('sec');
+ const prev=sec.querySelector('#inspectOverlay'); if(prev)prev.remove();
+ const overlay=document.createElementNS('http://www.w3.org/2000/svg','g');
+ overlay.setAttribute('id','inspectOverlay'); overlay.setAttribute('pointer-events','none');
+ overlay.innerHTML='<line id="inspectV" x1="0" x2="0" y1="'+Tp+'" y2="'+(H-Bt)+'" stroke="var(--fg)" stroke-width="1.5" stroke-dasharray="4 3" opacity=".85"/><circle id="inspectDot" cx="0" cy="0" r="5" fill="var(--fg)" stroke="var(--bg)" stroke-width="2"/>';
+ sec.appendChild(overlay);
+ const readout=$('hoverReadout');
+ function inspectAt(evt){
+   const pt=sec.createSVGPoint();pt.x=evt.clientX;pt.y=evt.clientY;
+   const p=pt.matrixTransform(sec.getScreenCTM().inverse());
+   const md=Math.max(x0,Math.min(x1,x0+(p.x-L)/(W-L-Rr)*(x1-x0)));
+   let idx=0;for(let i=1;i<R.length;i++){if(Math.abs(R[i].md-md)<Math.abs(R[idx].md-md))idx=i}
+   const r=R[idx],px=X(r.md),py=Y(r.tvd),z=r.z;
+   const v=sec.querySelector('#inspectV'),dot=sec.querySelector('#inspectDot');
+   v.setAttribute('x1',px);v.setAttribute('x2',px);dot.setAttribute('cx',px);dot.setAttribute('cy',py);
+   const names=['GR (API)','Porosity (v/v)','Density (g/cc)','Resistivity (ohm·m)','ROP'];
+   readout.innerHTML='<div><b>MD</b><span>'+f(r.md,1)+' m</span></div><div><b>TVDSS</b><span>'+f(r.tvd,2)+' m</span></div><div><b>Target top</b><span>'+f(r.T,2)+' m</span></div><div><b>Target base</b><span>'+f(r.B,2)+' m</span></div><div><b>Zone</b><span style="color:'+C[z]+'">'+NAMES[z]+'</span></div><div><b>INC (°)</b><span>'+(isFinite(r.inc)?f(r.inc,2):'No data')+'</span></div><div><b>AZI (°)</b><span>'+(isFinite(r.azi)?f(((r.azi%360)+360)%360,2):'No data')+'</span></div>'+names.map((n,i)=>'<div><b>'+n+'</b><span>'+(isFinite(r.lg[i])?f(r.lg[i],i===1||i===2?3:2):'No data')+'</span></div>').join('');
+ }
+ 
+ sec.onmousemove=inspectAt;sec.onclick=inspectAt;sec.onpointermove=inspectAt;
+  // Zoom and pan the SVG viewBox while keeping the outer plot frame fixed.
+  // Axis labels are redrawn in a fixed overlay so they remain visible while navigating.
+  let zoomX=1,zoomY=1,panX=0,panY=0,drag=null;
+  const base={x:0,y:0,w:W,h:H};
+  const axisOverlay=document.createElementNS('http://www.w3.org/2000/svg','g');
+  axisOverlay.setAttribute('id','fixedAxisOverlay');
+  axisOverlay.setAttribute('pointer-events','none');
+  function drawFixedAxes(){
+    const w=base.w,h=base.h;
+    let a='<rect x="0" y="0" width="'+(L-2)+'" height="'+h+'" fill="var(--bg)" opacity=".96"/>';
+    a+='<rect x="0" y="'+(h-Bt+2)+'" width="'+w+'" height="'+(Bt-2)+'" fill="var(--bg)" opacity=".96"/>';
+    const vw=base.w/zoomX,vh=base.h/zoomY;
+    for(let k=Math.ceil(yMin/YS)*YS;k<=yMax;k+=YS){
+      const yy=panY+(k-yMin)/(yMax-yMin)*(base.h-Tp-Bt)+Tp;
+      if(yy>=panY+Tp&&yy<=panY+base.h-Bt){
+        const screenY=(yy-panY)/vh*h;
+        a+='<text x="'+(L-10)+'" y="'+(screenY+6)+'" text-anchor="end" style="font-size:17px;fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:3px">'+k+'</text>';
+      }
+    }
+    for(let m=Math.ceil(x0/XS)*XS;m<=x1;m+=XS){
+      const xx=L+(m-x0)/(x1-x0)*(W-L-Rr);
+      const screenX=(xx-panX)/vw*w;
+      if(screenX>=L&&screenX<=w-Rr)a+='<text x="'+screenX+'" y="'+(h-Bt+27)+'" text-anchor="middle" style="font-size:17px;fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:3px">'+m+'</text>';
+    }
+    a+='<text x="'+(w/2)+'" y="'+(h-10)+'" text-anchor="middle" style="font-size:20px;font-weight:600;fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:4px">Measured depth (m)</text>';
+    a+='<text transform="translate(22 '+(h/2)+') rotate(-90)" text-anchor="middle" style="font-size:20px;font-weight:600;fill:var(--fg);paint-order:stroke;stroke:var(--bg);stroke-width:4px">TVDSS (m)</text>';
+    axisOverlay.innerHTML=a;
+    axisOverlay.setAttribute('transform','translate('+panX+' '+panY+') scale('+(1/zoomX)+' '+(1/zoomY)+')');
+  }
+  function applyZoom(){
+    const w=base.w/zoomX,h=base.h/zoomY;
+    panX=Math.max(0,Math.min(base.w-w,panX));
+    panY=Math.max(0,Math.min(base.h-h,panY));
+    sec.setAttribute('viewBox',panX+' '+panY+' '+w+' '+h);
+    drawFixedAxes();
+    if(!axisOverlay.isConnected)sec.appendChild(axisOverlay);
+    sec.classList.toggle('pan-mode',!!drag);
+  }
+  $('zoomReset').onclick=()=>{zoomX=1;zoomY=1;panX=0;panY=0;drag=null;applyZoom()};
+  sec.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const rect=sec.getBoundingClientRect();
+    const rx=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+    const ry=Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
+    const oldW=base.w/zoomX,oldH=base.h/zoomY;
+    const anchorX=panX+rx*oldW,anchorY=panY+ry*oldH;
+    const factor=e.deltaY<0?1.18:1/1.18;
+    const nextX=Math.max(1,Math.min(12,zoomX*factor));
+    const nextY=Math.max(1,Math.min(12,zoomY*factor));
+    zoomX=nextX;zoomY=nextY;
+    const newW=base.w/zoomX,newH=base.h/zoomY;
+    panX=anchorX-rx*newW;panY=anchorY-ry*newH;
+    applyZoom();
+  },{passive:false});
+  // Drag the geological section inside its fixed frame. Support left-drag and
+  // right-drag for mouse users, plus touch/stylus. Keep the SVG frame stationary.
+  sec.addEventListener('contextmenu',e=>e.preventDefault());
+  let dragMoved=false;
+  sec.addEventListener('pointerdown',e=>{
+    // Ignore middle-button; left and right buttons both start a pan.
+    if(e.pointerType==='mouse' && e.button!==0 && e.button!==2)return;
+    e.preventDefault();
+    dragMoved=false;
+    drag={x:e.clientX,y:e.clientY,panX,panY,pointerId:e.pointerId,button:e.button};
+    sec.classList.add('pan-mode');
+    try{sec.setPointerCapture(e.pointerId)}catch(_){}
+  },true);
+  sec.addEventListener('pointermove',e=>{
+    if(!drag || e.pointerId!==drag.pointerId)return;
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(Math.abs(dx)+Math.abs(dy)>2)dragMoved=true;
+    if(!dragMoved)return;
+    e.preventDefault();
+    const rect=sec.getBoundingClientRect();
+    if(!rect.width||!rect.height)return;
+    const vw=base.w/zoomX,vh=base.h/zoomY;
+    // Moving the pointer right/down moves the content right/down inside the frame.
+    panX=drag.panX-dx*vw/rect.width;
+    panY=drag.panY-dy*vh/rect.height;
+    applyZoom();
+  },true);
+  function finishSectionDrag(e){
+    if(!drag || (e.pointerId!==undefined && e.pointerId!==drag.pointerId))return;
+    const moved=dragMoved;
+    drag=null;dragMoved=false;
+    sec.classList.remove('pan-mode');
+    if(e.pointerId!==undefined){try{sec.releasePointerCapture(e.pointerId)}catch(_){}}
+    // Prevent a click inspection firing at the end of an actual drag.
+    if(moved){sec.dataset.suppressClick='1';setTimeout(()=>delete sec.dataset.suppressClick,0)}
+  }
+  sec.addEventListener('pointerup',finishSectionDrag,true);
+  sec.addEventListener('pointercancel',finishSectionDrag,true);
+  sec.addEventListener('click',e=>{if(sec.dataset.suppressClick){e.preventDefault();e.stopImmediatePropagation();delete sec.dataset.suppressClick}},true);
+  sec.addEventListener('dragstart',e=>e.preventDefault());
+  applyZoom();
+
+ {const gh=46,rh=46,dh=72,zh=16,gp=6,TH=gh+rh+dh+zh+3*gp+22,yr=gh+gp,y1=yr+rh+gp,y2=y1+dh+gp,xr=W-Rr;let k='';
+ const tag=(y,hh,n)=>'<rect x="0" y="'+y+'" width="'+(L-8)+'" height="'+hh+'" rx="3" fill="var(--fg)" opacity=".85"/><text x="'+((L-8)/2)+'" y="'+(y+hh/2+3)+'" text-anchor="middle" style="fill:var(--bg);font-weight:600">'+n+'</text>';
+ const gv=R.map(r=>r.lg[0]).filter(isFinite),rv=R.map(r=>r.lg[3]).filter(isFinite);
+ const box=(y,hh)=>'<rect x="'+L+'" y="'+y+'" width="'+(xr-L)+'" height="'+hh+'" fill="none" stroke="var(--line)"/>';
+ k+=tag(0,gh,'GR')+box(0,gh)+logTrack({R,X,L,xr,y:0,h:gh,idx:0,name:'GR',unit:'API',col:ssc,log:false,id:'gG'});
+ k+=tag(yr,rh,'RES')+box(yr,rh)+logTrack({R,X,L,xr,y:yr,h:rh,idx:3,name:'Resistivity',unit:'ohm\u00b7m',col:rtc,log:true,id:'gR'});
+ const dd=R.map(r=>r.tvd-r.T),thk=R.map(r=>r.T-r.B),dM=Math.max(...dd,2),dm=Math.min(...dd,-Math.max(...thk))-1,D2=v=>y1+(dM-v)/(dM-dm)*dh;
+ k+=tag(y1,dh,'DIST')+'<rect x="'+L+'" y="'+y1+'" width="'+(xr-L)+'" height="'+dh+'" fill="none" stroke="var(--line)"/>'
+  +'<polygon points="'+R.map(r=>X(r.md)+','+D2(0)).join(' ')+' '+R.slice().reverse().map(r=>X(r.md)+','+D2(-(r.T-r.B))).join(' ')+'" fill="var(--tgt)" opacity=".85"/>'
+  +'<line x1="'+L+'" x2="'+xr+'" y1="'+D2(0)+'" y2="'+D2(0)+'" stroke="var(--out)"/>'
+  +'<polyline points="'+R.map(r=>X(r.md)+','+D2(-(r.T-r.B))).join(' ')+'" fill="none" stroke="var(--out)" stroke-dasharray="4 3"/>'
+  +'<polyline points="'+R.map((r,i)=>X(r.md)+','+D2(dd[i])).join(' ')+'" fill="none" stroke="var(--traj)" stroke-width="1.6"/>'
+  +'<text x="'+(xr-3)+'" y="'+(D2(0)-3)+'" text-anchor="end" style="fill:var(--out)">TOP TARGET</text><text x="'+(xr-3)+'" y="'+(D2(-thk[thk.length-1])+10)+'" text-anchor="end" style="fill:var(--out)">BASE TARGET</text><text x="'+(L+3)+'" y="'+(y1+9)+'">Well distance to top target (m)</text>';
+ k+=tag(y2,zh,'ZONE');segs.forEach(g=>{k+='<rect x="'+X(g.s)+'" y="'+y2+'" width="'+Math.max(X(Math.min(g.e,x1))-X(g.s),.5)+'" height="'+zh+'" fill="'+C[g.z]+'"/>'});
+ faults.forEach(m=>{if(m>x0&&m<x1)k+='<line x1="'+X(m)+'" x2="'+X(m)+'" y1="0" y2="'+(y2+zh)+'" stroke="var(--mut)" stroke-dasharray="2 3"/>'});
+ for(let m=Math.ceil(x0/XS)*XS;m<=x1;m+=XS)k+='<text x="'+X(m)+'" y="'+(y2+zh+13)+'" text-anchor="middle">'+m+'</text>';
+ $('trk').setAttribute('viewBox','0 0 '+W+' '+TH);$('trk').innerHTML=k;
+ trkBaseW=W;trkBaseH=TH;applyTrackView();
+ // Inspect any lateral-track position with the mouse or by touch.
+ const trackSvg=$('trk');
+ {
+  const updateTrackReadout=evt=>{
+   const box=trackSvg.getBoundingClientRect();
+   const pt=trackSvg.createSVGPoint();pt.x=evt.clientX;pt.y=evt.clientY;
+   const local=pt.matrixTransform(trackSvg.getScreenCTM().inverse());
+   const vb=trackSvg.viewBox.baseVal;
+   const md=Math.max(x0,Math.min(x1,x0+(local.x-L)/(W-L-Rr)*(x1-x0)));
+   let idx=0;for(let j=1;j<R.length;j++)if(Math.abs(R[j].md-md)<Math.abs(R[idx].md-md))idx=j;
+   const row=R[idx],fmt=(v,n=2)=>isFinite(v)?Number(v).toFixed(n):'—';
+   const read=$('lateralHoverReadout');
+   if(read)read.innerHTML='<div><b>Lateral track inspection</b><span>MD '+fmt(row.md,1)+' m</span></div>'+
+    '<div><b>GR (API)</b><span>'+fmt(row.lg[0])+'</span></div>'+
+    '<div><b>Resistivity (ohm·m)</b><span>'+fmt(row.lg[3])+'</span></div>'+
+    '<div><b>Distance to target (m)</b><span>'+fmt(row.tvd-row.T)+'</span></div>'+
+    '<div><b>INC (°)</b><span>'+fmt(row.inc)+'</span></div>'+
+    '<div><b>AZI (°)</b><span>'+fmt(row.azi)+'</span></div>'+
+    '<div><b>Zone</b><span>'+({'in':'In target','above':'Above target','below':'Below target'}[row.z]||row.z)+'</span></div>';
+   let cross=trackSvg.querySelector('#trackInspectLine');
+   if(!cross){cross=document.createElementNS('http://www.w3.org/2000/svg','line');cross.id='trackInspectLine';cross.setAttribute('y1','0');cross.setAttribute('y2',String(TH));cross.setAttribute('stroke','var(--fg)');cross.setAttribute('stroke-width','1.5');cross.setAttribute('stroke-dasharray','4 3');cross.setAttribute('pointer-events','none');trackSvg.appendChild(cross)}
+   cross.setAttribute('x1',X(row.md));cross.setAttribute('x2',X(row.md));
+  };
+  if(trackSvg._h){trackSvg.removeEventListener('pointermove',trackSvg._h[0]);trackSvg.removeEventListener('click',trackSvg._h[1])}
+  trackSvg._h=[evt=>{if(!trkDrag)updateTrackReadout(evt)},updateTrackReadout];
+  trackSvg.addEventListener('pointermove',trackSvg._h[0]);trackSvg.addEventListener('click',trackSvg._h[1]);
+ }
+
+ $('grscale').innerHTML=(gv.length?'<div class="scale-row"><span>Sand</span><b>'+Math.min(...gv).toFixed(1)+'</b><span class="scale-bar" style="background:linear-gradient(90deg,'+ssc(0)+','+ssc(1)+')"></span><b>'+Math.max(...gv).toFixed(1)+' API</b><span>Shale</span></div>':'')+(rv.length?'<div class="scale-row"><span>Low res</span><b>'+Math.min(...rv).toFixed(1)+'</b><span class="scale-bar" style="background:linear-gradient(90deg,'+rtc(0)+','+rtc(.5)+','+rtc(1)+')"></span><b>'+Math.max(...rv).toFixed(1)+' ohm\u00b7m</b><span>High res (log scale)</span></div>':'')}
+ // strip
+ let t='';segs.forEach((g,i)=>{const a=X(g.s),b=X(Math.min(g.e,x1)),w=Math.max(b-a,.5);
+  t+=`<rect x="${a}" y="6" width="${w}" height="30" fill="${C[g.z]}"/>`;
+  if(w>34)t+=`<text x="${a+w/2}" y="25" text-anchor="middle" style="fill:#fff;font-size:13px;font-weight:600">${f(g.n,0)} m</text>`});
+ for(let m=Math.ceil(x0/XS)*XS;m<=x1;m+=XS)t+=`<text x="${X(m)}" y="52" text-anchor="middle">${m}</text>`;
+ $('strip').setAttribute('viewBox','0 0 '+W+' 56');$('strip').innerHTML=t;
+ $('runs').innerHTML=`<strong>Above ${f(tot.above,1)} m (${f(pct('above'),1)}%)</strong> · <strong>in target ${f(tot.in,1)} m (${f(pct('in'),1)}%)</strong> · <strong>below ${f(tot.below,1)} m (${f(pct('below'),1)}%)</strong>.`+(runs.length?` Target runs: ${runs.map(r=>f(r.n,0)+' m').join(', ')}.`:' No target runs.');
+ // table
+ let h=`<tr><th>Zone</th><th>Length (m)</th><th>Share</th><th>GR (API)</th><th>Porosity</th><th>Density</th><th>Res. (ohm·m)</th><th>ROP</th></tr>`;
+ const M={};
+ ['above','in','below'].forEach(z=>{
+  M[z]=[0,1,2,3,4].map(i=>med(arr[z].map(r=>r.lg[i])));
+  h+=`<tr><td><i class="sw" style="background:${C[z]}"></i>${NAMES[z]}</td><td>${f(tot[z],1)}</td><td>${f(pct(z),1)}%</td><td>${f(M[z][0],1)}</td><td>${f(M[z][1],2)}</td><td>${f(M[z][2],2)}</td><td>${f(M[z][3],1)}</td><td>${f(M[z][4],1)}</td></tr>`;
+ });
+ $('tbl').innerHTML=h+`<tr><td colspan="8" style="text-align:left;color:var(--mut);font-size:12px;border:0">Medians per zone. Density in g/cc, ROP in log units.</td></tr>`;
+ const out=[...arr.above,...arr.below],mo=[0,1,2,3,4].map(i=>med(out.map(r=>r.lg[i])));
+ const mi=M.in;
+ $('insight').innerHTML=isFinite(mi[1])&&isFinite(mo[1])?
+  `<strong>In target:</strong> porosity ${f(mi[1],2)} vs ${f(mo[1],2)} outside, density ${f(mi[2],2)} vs ${f(mo[2],2)} g/cc, resistivity ${f(mi[3],1)} vs ${f(mo[3],1)} ohm·m (${f(mi[3]/mo[3],1)}×), ROP ${f(mi[4],1)} vs ${f(mo[4],1)} (${mo[4]?(100*(mi[4]/mo[4]-1)>=0?'+':'')+f(100*(mi[4]/mo[4]-1),0)+'%':'–'}).`
+  :'Add log columns (gr, phi, rhob, rt, rop) to compare the target with the rest of the lateral.';
+ tools(S);
+}
+let _raf=0;const schedule=()=>{if(_raf)return;_raf=requestAnimationFrame(()=>{_raf=0;render()})};
+['sT','sS','sU','lg'].forEach(i=>$(i).addEventListener('input',schedule));
+$('load').onclick=()=>{try{D=parseCSV($('csv').value);$('err').textContent='';render()}catch(e){$('err').textContent=String(e)}};
+$('reset').onclick=()=>{demo();$('faultMDs').value='1868, 2108';$('faultStatus').textContent='Default demo faults: 1868, 2108 m';$('err').textContent='';render()};
+$('resetZones').onclick=()=>{
+  demo();
+  $('sT').value=6;$('sS').value=0;$('sU').value=1;
+  $('csv').value='';
+  $('err').textContent='Zones reset to the built-in demo target.';
+  $('faultMDs').value='1868, 2108';
+  $('faultStatus').textContent='Default demo faults: 1868, 2108 m';
+  render();
+};
+$('applyFaults').onclick=()=>{
+  const raw=$('faultMDs').value.trim();
+  const vals=raw?raw.split(/[,;\s]+/).filter(Boolean).map(Number):[];
+  if(vals.some(v=>!isFinite(v))){
+    $('faultStatus').textContent='Invalid input. Enter measured depths separated by commas.';
+    return;
+  }
+  faults=[...new Set(vals)].sort((a,b)=>a-b);
+  if(!D.custom){demo();$('faultMDs').value=faults.join(', ');}
+  $('faultStatus').textContent=faults.length?'Applied '+faults.length+' fault(s): '+faults.join(', ')+' m':'No fault markers';
+  render();
+};
+$('resetFaults').onclick=()=>{
+  faults=D.custom?[]:[1868,2108];
+  $('faultMDs').value=faults.join(', ');
+  $('faultStatus').textContent=faults.length?'Default demo faults: '+faults.join(', ')+' m':'No faults for imported data; add MDs above if needed';
+  render();
+};
+let TAB='h',LAST=null,CUT={phi:.23,gr:13,rt:10};
+const pc=(a,p)=>{a=a.filter(isFinite).sort((x,y)=>x-y);return a.length?a[Math.min(a.length-1,Math.floor(p*a.length))]:NaN};
+function tools(S){LAST=S;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===TAB));const el=$('lt');
+ if(TAB==='h')el.innerHTML='<div class="explore-panel">'+hist(S.R)+'</div><div id="exploreHoverReadout" class="explore-hover-readout"><div><b>Chart inspection</b><span>Hover over a bar to see its value range and drilled metres.</span></div></div>';
+ else if(TAB==='x')el.innerHTML='<div class="explore-panel">'+xplot(S.R)+'</div><div id="exploreHoverReadout" class="explore-hover-readout"><div><b>Crossplot inspection</b><span>Hover over any point to inspect its sample values.</span></div></div>';
+ else{el.innerHTML='<div class="explore-panel">'+cutUI()+'<div id="cres" class="note"></div></div>';[['cP','phi'],['cG','gr'],['cR','rt']].forEach(([i,k])=>$(i).oninput=e=>{CUT[k]=+e.target.value;$(i+'o').textContent=e.target.value;net()});net()}}
+$('tabs').onclick=e=>{const t=e.target.dataset&&e.target.dataset.t;if(t&&LAST){TAB=t;tools(LAST)}};
+$('distLog').onchange=()=>{if(LAST&&TAB==='h')tools(LAST)};
+
+// Explore Logs hover inspection: histogram bins and individual crossplot samples.
+$('lt').addEventListener('pointermove',e=>{
+ const box=$('exploreHoverReadout');if(!box)return;
+ const fmt=(v,n=2)=>v!==null&&v!==''&&isFinite(Number(v))?Number(v).toFixed(n):'—';
+ const bin=e.target.closest&&e.target.closest('[data-hist-bin]');
+ const dot=e.target.closest&&e.target.closest('[data-cross-sample]');
+ const tip=$('exploreHoverTooltip');
+ if(bin){
+  const lo=Number(bin.dataset.binLo),hi=Number(bin.dataset.binHi);
+  const content='<div><b>Log range</b><span>'+fmt(lo)+' – '+fmt(hi)+'</span></div>'+
+   '<div><b>In target</b><span>'+fmt(bin.dataset.inMetres,1)+' m drilled</span></div>'+
+   '<div><b>Outside target</b><span>'+fmt(bin.dataset.outMetres,1)+' m drilled</span></div>';
+  box.innerHTML=content;tip.innerHTML=content;tip.style.display='block';
+ }else if(dot){
+  const z=({in:'In target',above:'Above target',below:'Below target'}[dot.dataset.zone]||dot.dataset.zone||'—');
+  const content='<div><b>MD</b><span>'+fmt(dot.dataset.md,1)+' m</span></div>'+
+   '<div><b>TVDSS</b><span>'+fmt(dot.dataset.tvdss)+' m</span></div>'+
+   '<div><b>Porosity</b><span>'+fmt(dot.dataset.phi)+'</span></div>'+
+   '<div><b>Density</b><span>'+fmt(dot.dataset.rhob)+' g/cc</span></div>'+
+   '<div><b>GR</b><span>'+fmt(dot.dataset.gr)+' API</span></div>'+
+   '<div><b>Resistivity</b><span>'+fmt(dot.dataset.rt)+' ohm·m</span></div>'+
+   '<div><b>ROP</b><span>'+fmt(dot.dataset.rop)+'</span></div>'+
+   '<div><b>Zone</b><span>'+z+'</span></div>';
+  box.innerHTML=content;tip.innerHTML=content;tip.style.display='block';
+ }
+ if((bin||dot)&&e.clientX!==undefined){
+  const margin=12,tw=tip.offsetWidth||220,th=tip.offsetHeight||120;
+  let left=e.clientX+18,top=e.clientY+10;
+  if(left+tw>window.innerWidth-margin)left=e.clientX-tw-18;
+  if(top+th>window.innerHeight-margin)top=e.clientY-th-10;
+  tip.style.left=Math.max(margin,left)+'px';tip.style.top=Math.max(margin,top)+'px';
+ }
+});
+$('lt').addEventListener('pointerleave',()=>{
+ const box=$('exploreHoverReadout');if(!box)return;
+ const tip=$('exploreHoverTooltip');if(tip)tip.style.display='none';
+ if(TAB==='h')box.innerHTML='<div><b>Chart inspection</b><span>Hover over a bar to see its value range and drilled metres.</span></div>';
+ else if(TAB==='x')box.innerHTML='<div><b>Crossplot inspection</b><span>Hover over any point to inspect its sample values.</span></div>';
+});
+
+
+function hist(R){
+ const li=+$('distLog').value,N=['GR (API)','Porosity (v/v)','Density (g/cc)','Resistivity (ohm·m)','ROP'][li],v=R.map(r=>r.lg[li]).filter(isFinite);
+ if(!v.length)return '<p class="note">This log has no values in your data.</p>';
+ const lo=Math.min(...v),hi=Math.max(...v),n=14,st=(hi-lo)/n||1,a=Array(n).fill(0),b=Array(n).fill(0);
+ R.forEach(r=>{const x=r.lg[li];if(!isFinite(x))return;(r.z==='in'?a:b)[Math.min(n-1,Math.floor((x-lo)/st))]+=r.len});
+ const mx=Math.max(...a,...b)||1,W=760,L=10,bw=(W-2*L)/n;let s='<svg viewBox="0 0 760 170">';
+ for(let k=0;k<n;k++){const h1=a[k]/mx*120,h2=b[k]/mx*120,binLo=lo+k*st,binHi=lo+(k+1)*st;s+='<rect data-hist-bin="'+k+'" data-bin-lo="'+binLo+'" data-bin-hi="'+binHi+'" data-in-metres="'+a[k]+'" data-out-metres="'+b[k]+'" x="'+(L+k*bw+2)+'" y="'+(130-h1)+'" width="'+(bw/2-2)+'" height="'+Math.max(1,h1)+'" fill="var(--in)" tabindex="0"/><rect data-hist-bin="'+k+'" data-bin-lo="'+binLo+'" data-bin-hi="'+binHi+'" data-in-metres="'+a[k]+'" data-out-metres="'+b[k]+'" x="'+(L+k*bw+bw/2)+'" y="'+(130-h2)+'" width="'+(bw/2-2)+'" height="'+Math.max(1,h2)+'" fill="var(--out)" tabindex="0"/>'}
+ s+='<text x="'+L+'" y="148">'+lo.toFixed(2)+'</text><text x="'+(W-L)+'" y="148" text-anchor="end">'+hi.toFixed(2)+'</text><text x="'+W/2+'" y="164" text-anchor="middle">'+N+': metres drilled in each value range</text></svg>';
+ const q=z=>[.1,.5,.9].map(p=>pc(R.filter(r=>z?r.z==='in':r.z!=='in').map(r=>r.lg[li]),p).toFixed(2)).join(' / ');
+ return s+'<div class="legend"><span><i style="background:var(--in)"></i>In target</span><span><i style="background:var(--out)"></i>Outside target</span></div><p class="note">Low / middle / high values (P10 / P50 / P90). <strong>In target:</strong> '+q(1)+'. <strong>Outside:</strong> '+q(0)+'. Choose another log with the selector above.</p>'}
+function xplot(R){
+ const P=R.filter(r=>isFinite(r.lg[1])&&isFinite(r.lg[2]));
+ if(P.length<3)return '<p class="note">Add phi and rhob columns to see this plot.</p>';
+ const xs=P.map(r=>r.lg[2]),ys=P.map(r=>r.lg[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),W=760,H=260,L=44,B=34;
+ const X=v=>L+(v-x0)/((x1-x0)||1)*(W-L-12),Y=v=>10+(y1-v)/((y1-y0)||1)*(H-10-B);
+ let s='<svg viewBox="0 0 760 260"><line x1="'+L+'" x2="'+L+'" y1="10" y2="'+(H-B)+'" stroke="var(--line)"/><line x1="'+L+'" x2="'+(W-12)+'" y1="'+(H-B)+'" y2="'+(H-B)+'" stroke="var(--line)"/>';
+ P.forEach(r=>s+='<circle data-cross-sample="1" data-md="'+r.md+'" data-tvdss="'+r.tvd+'" data-phi="'+r.lg[1]+'" data-rhob="'+r.lg[2]+'" data-gr="'+r.lg[0]+'" data-rt="'+r.lg[3]+'" data-rop="'+r.lg[4]+'" data-zone="'+r.z+'" cx="'+X(r.lg[2])+'" cy="'+Y(r.lg[1])+'" r="4" fill="'+C[r.z]+'" fill-opacity=".68" stroke="var(--card)" stroke-width=".5" tabindex="0"/>');
+ s+='<text x="'+L+'" y="'+(H-20)+'">'+x0.toFixed(2)+'</text><text x="'+(W-12)+'" y="'+(H-20)+'" text-anchor="end">'+x1.toFixed(2)+'</text><text x="'+(W/2)+'" y="'+(H-4)+'" text-anchor="middle">Density (g/cc)</text><text x="'+(L-6)+'" y="18" text-anchor="end">'+y1.toFixed(2)+'</text><text x="'+(L-6)+'" y="'+(H-B)+'" text-anchor="end">'+y0.toFixed(2)+'</text><text transform="translate(10 '+(H/2-20)+') rotate(-90)" text-anchor="middle">Porosity</text></svg>';
+ return s+'<div class="legend"><span><i style="background:var(--in)"></i>In target</span><span><i style="background:var(--out)"></i>Above</span><span><i style="background:var(--below)"></i>Below</span></div>'}
+function cutUI(){const row=(id,l,mn,mx,st,v)=>'<label class="sub" style="display:block;margin:0 0 8px">'+l+' <output id="'+id+'o">'+v+'</output><input id="'+id+'" type="range" min="'+mn+'" max="'+mx+'" step="'+st+'" value="'+v+'"></label>';
+ return '<div class="ctl">'+row('cP','Porosity at least',.15,.3,.005,CUT.phi)+row('cG','GR at most',8,18,.5,CUT.gr)+row('cR','Resistivity at least',2,30,1,CUT.rt)+'</div>'}
+function net(){const R=LAST.R;let a=0,b=0,c=0;
+ R.forEach(r=>{const[gr,phi,,rt]=r.lg,ok=(!isFinite(phi)||phi>=CUT.phi)&&(!isFinite(gr)||gr<=CUT.gr)&&(!isFinite(rt)||rt>=CUT.rt);if(r.z==='in'){b+=r.len;if(ok)a+=r.len}else if(ok)c+=r.len});
+ $('cres').innerHTML='<strong>'+a.toFixed(0)+' m</strong> of good rock inside the target ('+(b?(100*a/b).toFixed(0):'0')+'% of the target interval). <strong>'+c.toFixed(0)+' m</strong> outside it. '+(a+c?(100*a/(a+c)).toFixed(0):'0')+'% of all good rock drilled is in the target. Move the sliders to see how sensitive this is to your cutoffs.'}
+const ssc=t=>{t=Math.min(1,Math.max(0,t));const a=[246,214,72],b=[110,72,40];return 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')'};
+const rtc=t=>'hsl('+(220-210*Math.min(1,Math.max(0,t)))+' 90% 46%)';
+function smo(v,w){return v.map((_,i)=>{let a=0,n=0;for(let j=i-w;j<=i+w;j++)if(j>=0&&j<v.length&&isFinite(v[j])){a+=v[j];n++}return n?a/n:NaN})}
+function curve(P){let d='M'+P[0][0]+','+P[0][1];for(let i=1;i<P.length-1;i++){d+=' Q'+P[i][0]+','+P[i][1]+' '+(P[i][0]+P[i+1][0])/2+','+(P[i][1]+P[i+1][1])/2}const l=P[P.length-1];return d+' L'+l[0]+','+l[1]}
+function logTrack(o){
+ const{R,X,L,xr,y,h,idx,col,log,id,unit}=o,raw=R.map(r=>r.lg[idx]),fin=raw.filter(isFinite);
+ if(!fin.length)return '<text x="'+(L+3)+'" y="'+(y+14)+'">No '+o.name+' column in this data</text>';
+ const v=smo(raw,3),lo0=idx===0?0:Math.min(...fin),hi0=idx===0?150:Math.max(...fin);let a=lo0,b=hi0;
+ if(log){a=Math.max(.01,lo0/1.4);b=hi0*1.4}else if(idx!==0){const p=(b-a)*.08||1;a-=p;b+=p}
+ const T=x=>log?Math.log10(x):x,Yv=x=>y+h-3-(T(x)-T(a))/((T(b)-T(a))||1)*(h-8),nrm=x=>(T(x)-T(lo0))/((T(hi0)-T(lo0))||1);
+ const pts=R.map((r,i)=>[X(r.md),isFinite(v[i])?Yv(Math.max(v[i],a)):null]).filter(p=>p[1]!==null);
+ let g='<defs><linearGradient id="'+id+'" gradientUnits="userSpaceOnUse" x1="'+L+'" x2="'+xr+'" y1="0" y2="0">';
+ R.forEach((r,i)=>{if(isFinite(v[i]))g+='<stop offset="'+((X(r.md)-L)/(xr-L)).toFixed(4)+'" stop-color="'+col(nrm(v[i]))+'"/>'});g+='</linearGradient></defs>';
+ if(log)for(let q=Math.pow(10,Math.ceil(Math.log10(a)));q<b;q*=10)g+='<line x1="'+L+'" x2="'+xr+'" y1="'+Yv(q)+'" y2="'+Yv(q)+'" stroke="var(--line)"/><text x="'+(L+2)+'" y="'+(Yv(q)-2)+'">'+q+'</text>';
+ const c=curve(pts),e=pts[pts.length-1][0],f=pts[0][0],t0='font-weight:600;paint-order:stroke;stroke:var(--bg);stroke-width:3px';
+ return g+'<path d="'+c+' L'+e+','+(y+h)+' L'+f+','+(y+h)+' Z" fill="url(#'+id+')" fill-opacity=".85"/><path d="'+c+'" fill="none" stroke="var(--fg)" stroke-width="1" stroke-opacity=".7"/>'
+ +'<text x="'+(L+(log?16:3))+'" y="'+(y+9)+'" style="'+t0+'">'+o.name+' '+lo0.toFixed(1)+'\u2013'+hi0.toFixed(1)+' '+unit+'</text><text x="'+(xr-3)+'" y="'+(y+9)+'" text-anchor="end" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px">axis '+(log?'log ':'')+a.toFixed(1)+'\u2013'+b.toFixed(1)+'</text>'}
+function sampleCSV(){demo();const t=['md,tvdss,top,base,gr,phi,rhob,rt,rop'];D.rows.forEach(r=>t.push([r.md,r.tvd.toFixed(2),r.t0.toFixed(2),(r.t0-6).toFixed(2),...r.lg.map((v,i)=>v.toFixed(i==1?3:i==2?3:1))].join(',')));return t.join('\n')}
+function loadSample(){const c=sampleCSV();$('csv').value=c;D=parseCSV(c);faults=[1868,2108];$('faultMDs').value='1868, 2108';$('faultStatus').textContent='Default demo faults: 1868, 2108 m';$('imp').open=true;$('err').textContent='';render()}
+$('samp').onclick=loadSample;
+
+// Open the native file picker directly from the button click (must be a user gesture).
+$('pickCsv').addEventListener('click',()=>{
+  const picker=$('csvFile');
+  if(picker) picker.click();
+});
+
+// Read and validate the selected CSV, then update the visualisation.
+$('csvFile').addEventListener('change',async event=>{
+  const file=event.target.files && event.target.files[0];
+  if(!file) return;
+  $('err').textContent='Reading '+file.name+'…';
+  try{
+    const content=await file.text();
+    const parsed=parseCSV(content);
+    $('csv').value=content;
+    D=parsed;
+    faults=[];
+    $('imp').open=true;
+    render();
+    $('err').textContent='Imported '+file.name+' — '+parsed.rows.length+' valid rows. The section has been updated.';
+  }catch(error){
+    $('imp').open=true;
+    $('err').textContent='Import failed: '+String(error);
+  }finally{
+    // Reset so selecting the same file again also triggers the change event.
+    event.target.value='';
+  }
+});
+
+
+// Real-time connection options: simulated stream, WebSocket, and REST polling.
+let liveTimer=null,liveSocket=null,livePaused=false,liveConnected=false,liveBaseRows=[],liveStartMD=0,liveModeActive='';
+function liveStatus(state,msg){const b=$('liveBadge');b.textContent=state;b.style.background=state==='Live'?'#d9f1e5':state==='Error'?'#f8e1dc':state==='Connecting'?'#f8efd6':'#e6edf2';b.style.color=state==='Live'?'#226a4c':state==='Error'?'#9d3424':state==='Connecting'?'#815c16':'#38556b';$('liveMessage').textContent=msg||state;}
+function updateLiveMode(){const m=$('liveMode').value;const wrap=$('liveEndpointWrap');wrap.style.display=m==='demo'?'none':'block';$('liveEndpointLabel').textContent=m==='ws'?'WebSocket URL':'REST endpoint URL';$('liveEndpoint').placeholder=m==='ws'?'wss://your-approved-gateway/stream':'https://your-approved-gateway/latest';$('liveEndpointHelp').textContent=m==='ws'?'Expected messages: CSV text, JSON row array, or {"rows":[...]}. Do not put credentials or API keys in this HTML file.':'Endpoint must return CSV text or JSON rows and allow browser CORS. Do not put credentials or API keys in this HTML file.';}
+$('liveMode').addEventListener('change',updateLiveMode);$('liveInterval').addEventListener('input',()=>{$('liveIntervalOut').textContent=$('liveInterval').value+' s';if(liveConnected&&liveModeActive==='rest'){stopLiveTimers();startRestPolling();}});updateLiveMode();
+function rowToLive(r){const get=(...keys)=>{for(const k of keys){if(r[k]!==undefined&&r[k]!==null&&r[k]!=='')return Number(r[k]);}return NaN;};return {md:get('md','MD'),tvd:get('tvdss','tvd','TVDSS'),top:get('top','target_top'),base:get('base','target_base'),inc:get('inc','INC'),azi:get('azi','AZI'),lg:[get('gr','GR'),get('phi','porosity','PHI'),get('rhob','density','RHOB'),get('rt','resistivity','RT'),get('rop','ROP')]};}
+function parseLivePayload(payload){if(typeof payload!=='string')payload=JSON.stringify(payload);const t=payload.trim();if(!t)throw new Error('The feed returned an empty payload.');let rows;if(t[0]==='{'||t[0]==='['){let obj=JSON.parse(t);rows=Array.isArray(obj)?obj:(obj.rows||obj.data||obj.samples);if(!Array.isArray(rows))throw new Error('JSON response must be an array or contain rows/data/samples.');rows=rows.map(rowToLive).filter(r=>isFinite(r.md)&&isFinite(r.tvd)&&isFinite(r.top)&&isFinite(r.base));}else{const parsed=parseCSV(t);rows=parsed.rows;}if(rows.length<4)throw new Error('At least 4 valid samples are required (md, tvdss, top, base).');rows.sort((a,b)=>a.md-b.md);return {rows,custom:true};}
+function applyLivePayload(payload,label){const next=parseLivePayload(payload);D=next;$('liveSampleCount').textContent=String(next.rows.length);$('liveLastUpdate').textContent=new Date().toLocaleTimeString();$('liveFeedName').textContent=($('liveWell').value.trim()||'Live feed')+' · '+label;$('csv').value=rowsAsCSV(next.rows);render();liveStatus(livePaused?'Paused':'Live',`Updated ${next.rows.length} samples.`);}
+function rowsAsCSV(rows){return ['md,tvdss,top,base,gr,phi,rhob,rt,rop,inc,azi',...rows.map(r=>[r.md,r.tvd,r.top,r.base,...r.lg,r.inc,r.azi].map(v=>isFinite(v)?v:'').join(','))].join('\n');}
+function stopLiveTimers(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
+function makeDemoLivePayload(){if(!liveBaseRows.length){liveBaseRows=D.rows.map(r=>({md:r.md,tvd:r.tvd,top:isFinite(r.top)?r.top:r.t0,base:isFinite(r.base)?r.base:(isFinite(r.t0)?r.t0-6:r.tvd-6),inc:r.inc,azi:r.azi,lg:[...r.lg]}));liveStartMD=liveBaseRows[liveBaseRows.length-1].md;}
+ const last=liveBaseRows[liveBaseRows.length-1],prev=liveBaseRows[Math.max(0,liveBaseRows.length-2)],step=3,slope=(last.tvd-prev.tvd)/Math.max(.001,last.md-prev.md),md=last.md+step,top=last.top+(last.top-prev.top)*step/Math.max(.001,last.md-prev.md),tvd=last.tvd+slope*step;const noise=(a)=>a+(Math.random()-.5)*Math.max(.02,Math.abs(a)*.025);const row={md,tvd,top,base:top-6,inc:last.inc,azi:last.azi,lg:last.lg.map(noise)};liveBaseRows.push(row);if(liveBaseRows.length>500)liveBaseRows.shift();return rowsAsCSV(liveBaseRows);}
+function startDemoStream(){liveBaseRows=[];liveBaseRows=D.rows.map(r=>({md:r.md,tvd:r.tvd,top:isFinite(r.top)?r.top:r.t0,base:isFinite(r.base)?r.base:(isFinite(r.t0)?r.t0-6:r.tvd-6),inc:r.inc,azi:r.azi,lg:[...r.lg]}));liveStartMD=liveBaseRows[liveBaseRows.length-1].md;try{applyLivePayload(rowsAsCSV(liveBaseRows),'simulated');}catch(e){}liveTimer=setInterval(()=>{if(livePaused)return;try{applyLivePayload(makeDemoLivePayload(),'simulated stream');}catch(e){liveStatus('Error',String(e));}},Math.max(1,+$('liveInterval').value)*1000);}
+async function pollRest(){if(livePaused||!liveConnected)return;const url=$('liveEndpoint').value.trim();if(!url){liveStatus('Error','Enter a REST endpoint URL.');return;}try{const res=await fetch(url,{cache:'no-store',headers:{'Accept':'application/json,text/csv,*/*'}});if(!res.ok)throw new Error('HTTP '+res.status+' '+res.statusText);const text=await res.text();applyLivePayload(text,'REST polling');}catch(e){liveStatus('Error','REST request failed: '+e.message);}}
+function startRestPolling(){stopLiveTimers();pollRest();liveTimer=setInterval(pollRest,Math.max(1,+$('liveInterval').value)*1000);}
+function disconnectLive(){stopLiveTimers();if(liveSocket){try{liveSocket.close();}catch(e){}liveSocket=null;}liveConnected=false;livePaused=false;$('liveConnect').disabled=false;$('liveDisconnect').disabled=true;$('livePause').disabled=true;$('livePause').textContent='Pause updates';liveStatus('Disconnected','Connection closed.');}
+$('liveConnect').addEventListener('click',()=>{disconnectLive();const mode=$('liveMode').value;liveModeActive=mode;livePaused=false;liveConnected=true;$('liveConnect').disabled=true;$('liveDisconnect').disabled=false;$('livePause').disabled=false;$('livePause').textContent='Pause updates';liveStatus('Connecting','Starting '+mode+' connection…');if(mode==='demo'){startDemoStream();return;}const url=$('liveEndpoint').value.trim();if(!url){disconnectLive();liveStatus('Error','Enter an endpoint URL first.');return;}if(mode==='ws'){try{liveSocket=new WebSocket(url);liveSocket.onopen=()=>liveStatus('Live','WebSocket connected; waiting for samples.');liveSocket.onmessage=e=>{if(livePaused)return;try{applyLivePayload(e.data,'WebSocket');}catch(err){liveStatus('Error','Payload rejected: '+err.message);}};liveSocket.onerror=()=>liveStatus('Error','WebSocket error. Check URL, gateway and network access.');liveSocket.onclose=()=>{if(liveConnected){liveConnected=false;stopLiveTimers();$('liveConnect').disabled=false;$('liveDisconnect').disabled=true;$('livePause').disabled=true;liveStatus('Disconnected','WebSocket closed.');}};}catch(e){disconnectLive();liveStatus('Error','Could not open WebSocket: '+e.message);}}else{startRestPolling();}});
+$('liveDisconnect').addEventListener('click',disconnectLive);
+$('livePause').addEventListener('click',()=>{livePaused=!livePaused;$('livePause').textContent=livePaused?'Resume updates':'Pause updates';liveStatus(livePaused?'Paused':'Live',livePaused?'Incoming updates are paused.':'Updates resumed.');if(!livePaused&&liveModeActive==='rest')pollRest();});
+
+addEventListener('hashchange',()=>{if(location.hash==='#csv-sample')loadSample()});
+demo();render();
+if(location.hash==='#csv-sample')loadSample();
+</script></body></html>

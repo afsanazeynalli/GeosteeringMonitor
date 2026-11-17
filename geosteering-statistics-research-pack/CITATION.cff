@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this research pack, cite it as below."
+title: "Geosteering Statistics Research Pack"
+abstract: "Standalone browser tool and synthetic data for descriptive trajectory-to-target visualization and geosteering statistics research."
+type: software
+authors:
+  - name: "Research Starter Pack Contributors"
+version: 0.1.0
+date-released: 2026-11-17
